@@ -1,0 +1,64 @@
+services:
+
+  # Application
+  app:
+    build:
+      context: ./
+      dockerfile: docker/app/Dockerfile
+      args:
+        - user=laravel
+        - uid=1000
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - db
+
+  # Web Server
+  web:
+    build:
+      context: ./
+      dockerfile: docker/web/Dockerfile
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+
+  # Database
+  db:
+    image: mysql:8.0.45
+    volumes:
+      - dbdata:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "33061:3306"
+
+  # Database Management Tool
+  pma:
+    image: phpmyadmin:5.2.3
+    environment:
+      PMA_HOST: db
+      PMA_USER: ${DB_USERNAME}
+      PMA_PASSWORD: ${DB_PASSWORD}
+      PMA_PORT: 3306
+    ports:
+      - "8888:80"
+    depends_on:
+      - db
+
+  # Mock Gateways
+  gateways-mock:
+    image: matheusprotzen/gateways-mock
+    ports:
+      - "3001:3001"
+      - "3002:3002"
+
+volumes:
+  dbdata:
