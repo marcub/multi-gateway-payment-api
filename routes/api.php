@@ -1,21 +1,25 @@
 <?php
 
 use App\Infrastructure\Http\Controllers\AuthController;
+use App\Infrastructure\Http\Controllers\GatewayController;
 use App\Infrastructure\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::middleware('role:admin')->group(function () {
+        Route::post('/gateways/{id}/activate', [GatewayController::class, 'activate']);
+        Route::post('/gateways/{id}/deactivate', [GatewayController::class, 'deactivate']);
+        Route::patch('/gateways/{id}/priority', [GatewayController::class, 'changePriority']);
     });
 
     // ADMIN + MANAGER — gerenciam usuários
     Route::middleware('role:admin,manager')->group(function () {
-        Route::post('/register', [AuthController::class, 'register']);
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/users/{id}', [UserController::class, 'show']);
         Route::patch('/users/{id}', [UserController::class, 'update']);
