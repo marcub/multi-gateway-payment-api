@@ -43,4 +43,23 @@ class EloquentGatewayRepository implements GatewayRepositoryInterface
         );
     }
 
+    public function findAllActive(): array
+    {
+        return EloquentGateway::query()
+            ->where('is_active', true)
+            ->orderBy('priority')
+            ->get()
+            ->map(function (EloquentGateway $eloquentGateway): Gateway {
+                return new Gateway(
+                    id: new GatewayId($eloquentGateway->id),
+                    name: $eloquentGateway->name,
+                    isActive: $eloquentGateway->is_active,
+                    priority: $eloquentGateway->priority,
+                    createdAt: $eloquentGateway->created_at->toDateTimeImmutable(),
+                    updatedAt: $eloquentGateway->updated_at->toDateTimeImmutable()
+                );
+            })
+            ->toArray();
+    }
+
 }

@@ -5,6 +5,7 @@ use App\Infrastructure\Http\Controllers\GatewayController;
 use App\Infrastructure\Http\Controllers\UserController;
 use App\Infrastructure\Http\Controllers\ClientController;
 use App\Infrastructure\Http\Controllers\ProductController;
+use App\Infrastructure\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -18,6 +19,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/gateways/{id}/activate', [GatewayController::class, 'activate']);
         Route::post('/gateways/{id}/deactivate', [GatewayController::class, 'deactivate']);
         Route::patch('/gateways/{id}/priority', [GatewayController::class, 'changePriority']);
+        Route::get('/transactions', [TransactionController::class, 'index']);
+        Route::get('/transactions/{id}', [TransactionController::class, 'show']);
+        Route::post('/transactions', [TransactionController::class, 'charge']);
     });
 
     // ADMIN + MANAGER — gerenciam usuários
@@ -40,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ADMIN + FINANCE — reembolso
     Route::middleware('role:admin,finance')->group(function () {
+        Route::post('/transactions/{id}/refund', [TransactionController::class, 'refund']);
     });
 
     Route::middleware('role:admin,user')->group(function () {
