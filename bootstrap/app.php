@@ -21,6 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+            return \App\Infrastructure\Http\Responses\ApiResponse::error(
+                'Unauthenticated.',
+                401
+            );
+        });
         
         $exceptions->render(function (\App\Domain\User\Exceptions\UserException $e, $request) {
             return \App\Infrastructure\Http\Responses\ApiResponse::error(
