@@ -9,7 +9,6 @@ use App\Infrastructure\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register', [AuthController::class, 'register']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -26,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ADMIN + MANAGER — gerenciam usuários
     Route::middleware('role:admin,manager')->group(function () {
+        Route::post('/register', [AuthController::class, 'register']);
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/users/{id}', [UserController::class, 'show']);
         Route::patch('/users/{id}', [UserController::class, 'update']);
