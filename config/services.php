@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'gateway1' => [
+        'base_url' => env('GATEWAY1_BASE_URL', 'http://localhost:3001'),
+        'email' => env('GATEWAY1_EMAIL', 'dev@betalent.tech'),
+        'token' => env('GATEWAY1_TOKEN', 'FEC9BB078BF338F464F96B48089EB498'),
+    ],
+
+    'gateway2' => [
+        'base_url' => env('GATEWAY2_BASE_URL', 'http://localhost:3002'),
+        'token' => env('GATEWAY2_TOKEN'),
+        'secret' => env('GATEWAY2_SECRET'),
+    ],
+
 ];

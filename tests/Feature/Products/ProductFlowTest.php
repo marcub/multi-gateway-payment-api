@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Auth;
+namespace Tests\Feature\Products;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Infrastructure\Database\Eloquent\Product as EloquentProduct;

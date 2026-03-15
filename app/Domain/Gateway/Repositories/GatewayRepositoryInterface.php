@@ -10,5 +10,6 @@ interface GatewayRepositoryInterface
 {
     public function save(Gateway $gateway): void;
     public function findById(string $id): ?Gateway;
+    public function findAllActive(): array;
 }
  
