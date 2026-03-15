@@ -4,6 +4,7 @@ use App\Infrastructure\Http\Controllers\AuthController;
 use App\Infrastructure\Http\Controllers\GatewayController;
 use App\Infrastructure\Http\Controllers\UserController;
 use App\Infrastructure\Http\Controllers\ClientController;
+use App\Infrastructure\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -30,6 +31,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ADMIN + MANAGER + FINANCE — gerenciam produtos
     Route::middleware('role:admin,manager,finance')->group(function () {
+        Route::get('/products', [ProductController::class, 'index']);
+        Route::get('/products/{id}', [ProductController::class, 'show']);
+        Route::post('/products', [ProductController::class, 'create']);
+        Route::patch('/products/{id}', [ProductController::class, 'update']);
+        Route::delete('/products/{id}', [ProductController::class, 'delete']);
     });
 
     // ADMIN + FINANCE — reembolso
