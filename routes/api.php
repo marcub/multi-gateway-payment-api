@@ -3,6 +3,7 @@
 use App\Infrastructure\Http\Controllers\AuthController;
 use App\Infrastructure\Http\Controllers\GatewayController;
 use App\Infrastructure\Http\Controllers\UserController;
+use App\Infrastructure\Http\Controllers\ClientController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -33,5 +34,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ADMIN + FINANCE — reembolso
     Route::middleware('role:admin,finance')->group(function () {
+    });
+
+    Route::middleware('role:admin,user')->group(function () {
+        Route::get('/clients', [ClientController::class, 'index']);
+        Route::get('/clients/{id}', [ClientController::class, 'show']);
     });
 });

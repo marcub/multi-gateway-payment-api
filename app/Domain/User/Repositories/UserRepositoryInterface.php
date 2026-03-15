@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\User\Repositories;
 
 use App\Domain\User\Entities\User;
-use App\Domain\User\ValueObjects\Email;
+use App\Domain\Shared\Email;
 
 interface UserRepositoryInterface
 {

@@ -6,16 +6,17 @@ use App\Domain\User\Entities\User;
 use App\Domain\User\Exceptions\UserException;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\Domain\User\Service\UserService;
-use App\Domain\User\ValueObjects\Email;
+use App\Domain\Shared\Email;
 use App\Domain\User\ValueObjects\Role;
 use App\Domain\User\ValueObjects\UserId;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
+use Illuminate\Support\Str;
 
 class UserServiceTest extends TestCase
 { 
     private function makeUser(
-        string $id = '11111111-1111-1111-1111-111111111111',
+        ?string $id = null,
         string $email = 'teste@test.com',
         string $plainPassword = 'correct-password',
         Role $role = Role::USER,
@@ -23,6 +24,7 @@ class UserServiceTest extends TestCase
         ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $updatedAt = null
     ): User {
+        $id = $id ?? Str::uuid()->toString();
         $createdAt = $createdAt ?? new DateTimeImmutable('2020-01-01 00:00:00');
         $updatedAt = $updatedAt ?? new DateTimeImmutable('2020-01-01 00:00:00');
 
@@ -169,8 +171,9 @@ class UserServiceTest extends TestCase
 
     public function test_update_throws_not_found_when_user_does_not_exist(): void
     {
+        $missingId = Str::uuid()->toString();
         $userRepository = $this->createMock(UserRepositoryInterface::class);
-        $userRepository->expects($this->once())->method('findById')->with('missing-id')->willReturn(null);
+        $userRepository->expects($this->once())->method('findById')->with($missingId)->willReturn(null);
         $userRepository->expects($this->never())->method('save');
 
         $userService = new UserService($userRepository);
@@ -178,12 +181,13 @@ class UserServiceTest extends TestCase
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('User not found.');
 
-        $userService->updateUser('missing-id', 'a@test.com', null, null);
+        $userService->updateUser($missingId, 'a@test.com', null, null);
     }
 
     public function test_update_throws_nothing_to_update_when_payload_has_no_effective_changes(): void
     {
-        $user = $this->makeUser(email: 'same@test.com', plainPassword: 'same-password', role: Role::USER);
+        $updateId = Str::uuid()->toString();
+        $user = $this->makeUser(id: $updateId, email: 'same@test.com', plainPassword: 'same-password', role: Role::USER);
 
         $userRepository = $this->createMock(UserRepositoryInterface::class);
         $userRepository->method('findById')->willReturn($user);
@@ -195,7 +199,7 @@ class UserServiceTest extends TestCase
         $this->expectExceptionMessage('No valid fields provided for update.');
 
         $userService->updateUser(
-            '11111111-1111-1111-1111-111111111111',
+            $updateId,
             'same@test.com',
             'same-password',
             'user'
@@ -204,12 +208,15 @@ class UserServiceTest extends TestCase
 
     public function test_update_throws_already_exists_when_new_email_is_already_used_by_another_user(): void
     {
+        $currentId = Str::uuid()->toString();
         $current = $this->makeUser(
-            id: '11111111-1111-1111-1111-111111111111',
+            id: $currentId,
             email: 'current@test.com'
         );
+
+        $otherId = Str::uuid()->toString();
         $other = $this->makeUser(
-            id: '22222222-2222-2222-2222-222222222222',
+            id: $otherId,
             email: 'used@test.com'
         );
 
@@ -223,13 +230,14 @@ class UserServiceTest extends TestCase
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('User already exists.');
 
-        $userService->updateUser('11111111-1111-1111-1111-111111111111', 'used@test.com', null, null);
+        $userService->updateUser($currentId, 'used@test.com', null, null);
     }
 
     public function test_update_saves_and_returns_user_when_changes_are_valid(): void
     {
+        $currentId = Str::uuid()->toString();
         $current = $this->makeUser(
-            id: '11111111-1111-1111-1111-111111111111',
+            id: $currentId,
             email: 'old@test.com',
             plainPassword: 'old-password',
             role: Role::USER,
@@ -246,7 +254,7 @@ class UserServiceTest extends TestCase
         $userService = new UserService($userRepository);
 
         $updated = $userService->updateUser(
-            '11111111-1111-1111-1111-111111111111',
+            $currentId,
             'new@test.com',
             'new-password',
             'admin'
@@ -259,6 +267,7 @@ class UserServiceTest extends TestCase
 
     public function test_get_user_throws_not_found_when_missing(): void
     {
+        $missingId = Str::uuid()->toString();
         $userRepository = $this->createMock(UserRepositoryInterface::class);
         $userRepository->expects($this->once())->method('findById')->willReturn(null);
 
@@ -267,26 +276,32 @@ class UserServiceTest extends TestCase
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('User not found.');
 
-        $userService->getUser('missing-id');
+        $userService->getUser($missingId);
     }
 
     public function test_get_user_returns_user_when_exists(): void
     {
-        $user = $this->makeUser();
+        $userId = Str::uuid()->toString();
+        $user = $this->makeUser(id: $userId);
 
         $userRepository = $this->createMock(UserRepositoryInterface::class);
         $userRepository->expects($this->once())->method('findById')->willReturn($user);
 
         $userService = new UserService($userRepository);
 
-        $result = $userService->getUser('11111111-1111-1111-1111-111111111111');
+        $result = $userService->getUser($userId);
 
         $this->assertSame((string) $user->getId(), (string) $result->getId());
     }
 
     public function test_list_users_returns_repository_list(): void
     {
-        $users = [$this->makeUser(), $this->makeUser(id: '22222222-2222-2222-2222-222222222222')];
+        $userId1 = Str::uuid()->toString();
+        $userId2 = Str::uuid()->toString();
+        $users = [
+            $this->makeUser(id: $userId1),
+            $this->makeUser(id: $userId2)
+        ];
 
         $userRepository = $this->createMock(UserRepositoryInterface::class);
         $userRepository->expects($this->once())->method('findAll')->willReturn($users);
@@ -300,6 +315,7 @@ class UserServiceTest extends TestCase
 
     public function test_activate_user_throws_not_found_when_missing(): void
     {
+        $missingId = Str::uuid()->toString();
         $userRepository = $this->createMock(UserRepositoryInterface::class);
         $userRepository->method('findById')->willReturn(null);
         $userRepository->expects($this->never())->method('save');
@@ -309,13 +325,14 @@ class UserServiceTest extends TestCase
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('User not found.');
 
-        $userService->activateUser('missing-id');
+        $userService->activateUser($missingId);
     }
 
     public function test_activate_user_throws_already_active_when_user_is_active(): void
     {
+        $userId = Str::uuid()->toString();
         $userRepository = $this->createMock(UserRepositoryInterface::class);
-        $userRepository->method('findById')->willReturn($this->makeUser(isActive: true));
+        $userRepository->method('findById')->willReturn($this->makeUser(id: $userId, isActive: true));
         $userRepository->expects($this->never())->method('save');
 
         $userService = new UserService($userRepository);
@@ -323,12 +340,13 @@ class UserServiceTest extends TestCase
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('User is already active.');
 
-        $userService->activateUser('11111111-1111-1111-1111-111111111111');
+        $userService->activateUser($userId);
     }
 
     public function test_activate_user_saves_when_user_is_inactive(): void
     {
-        $inactive = $this->makeUser(isActive: false);
+        $inactiveId = Str::uuid()->toString();
+        $inactive = $this->makeUser(id: $inactiveId, isActive: false);
 
         $userRepository = $this->createMock(UserRepositoryInterface::class);
         $userRepository->method('findById')->willReturn($inactive);
@@ -338,11 +356,12 @@ class UserServiceTest extends TestCase
 
         $userService = new UserService($userRepository);
 
-        $userService->activateUser('11111111-1111-1111-1111-111111111111');
+        $userService->activateUser($inactiveId);
     }
 
     public function test_deactivate_user_throws_not_found_when_missing(): void
     {
+        $missingId = Str::uuid()->toString();
         $userRepository = $this->createMock(UserRepositoryInterface::class);
         $userRepository->method('findById')->willReturn(null);
         $userRepository->expects($this->never())->method('save');
@@ -352,13 +371,14 @@ class UserServiceTest extends TestCase
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('User not found.');
 
-        $userService->deactivateUser('missing-id');
+        $userService->deactivateUser($missingId);
     }
 
     public function test_deactivate_user_throws_already_inactive_when_user_is_inactive(): void
     {
+        $userId = Str::uuid()->toString();
         $userRepository = $this->createMock(UserRepositoryInterface::class);
-        $userRepository->method('findById')->willReturn($this->makeUser(isActive: false));
+        $userRepository->method('findById')->willReturn($this->makeUser(id: $userId, isActive: false));
         $userRepository->expects($this->never())->method('save');
 
         $userService = new UserService($userRepository);
@@ -366,12 +386,13 @@ class UserServiceTest extends TestCase
         $this->expectException(UserException::class);
         $this->expectExceptionMessage('User is already inactive.');
 
-        $userService->deactivateUser('11111111-1111-1111-1111-111111111111');
+        $userService->deactivateUser($userId);
     }
 
     public function test_deactivate_user_saves_when_user_is_active(): void
     {
-        $active = $this->makeUser(isActive: true);
+        $userId = Str::uuid()->toString();
+        $active = $this->makeUser(id: $userId, isActive: true);
 
         $userRepository = $this->createMock(UserRepositoryInterface::class);
         $userRepository->method('findById')->willReturn($active);
@@ -381,6 +402,6 @@ class UserServiceTest extends TestCase
 
         $userService = new UserService($userRepository);
 
-        $userService->deactivateUser('11111111-1111-1111-1111-111111111111');
+        $userService->deactivateUser($userId);
     }
 }

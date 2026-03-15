@@ -43,6 +43,13 @@ return Application::configure(basePath: dirname(__DIR__))
             );
         });
 
+        $exceptions->render(function (\App\Domain\Client\Exceptions\ClientException $e, $request) {
+            return \App\Infrastructure\Http\Responses\ApiResponse::error(
+                $e->getMessage(),
+                $e->getCode() ?: 422
+            );
+        });
+
         $exceptions->render(function (\Illuminate\Validation\ValidationException $e, $request) {
             return \App\Infrastructure\Http\Responses\ApiResponse::error(
                 'Validation failed.',
